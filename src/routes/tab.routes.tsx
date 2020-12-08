@@ -30,6 +30,7 @@ const TabRoutes: React.FC = () => (
       name="DashboardStack"
       component={Dashboard}
     />
+
     <Tab.Screen
       name="Orders"
       options={{

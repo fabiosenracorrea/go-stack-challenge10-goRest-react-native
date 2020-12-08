@@ -22,6 +22,7 @@ const AppRoutes: React.FC = () => (
         name="Home"
         component={Home}
       />
+
       <App.Screen
         name="MainBottom"
         component={TabRoutes}
@@ -30,6 +31,7 @@ const AppRoutes: React.FC = () => (
           gestureEnabled: false,
         }}
       />
+
       <App.Screen
         name="FoodDetails"
         component={FoodDetails}

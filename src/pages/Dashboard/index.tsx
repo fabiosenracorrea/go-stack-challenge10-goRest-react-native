@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Image, ScrollView } from 'react-native';
 
 import Icon from 'react-native-vector-icons/Feather';
@@ -51,15 +51,46 @@ const Dashboard: React.FC = () => {
   >();
   const [searchValue, setSearchValue] = useState('');
 
-  const navigation = useNavigation();
+  const { navigate } = useNavigation();
 
   async function handleNavigate(id: number): Promise<void> {
-    // Navigate do ProductDetails page
+    navigate('FoodDetails', { id });
   }
 
   useEffect(() => {
     async function loadFoods(): Promise<void> {
-      // Load Foods from API
+      const dataToQuery = {
+        name_like: searchValue,
+        category_like: selectedCategory,
+      };
+
+      // validate that only filled params are sent
+      const queryToAdd = Object.keys(dataToQuery).reduce((acc, key) => {
+        const queryParamValue = dataToQuery[key];
+
+        if (!queryParamValue) return { ...acc };
+
+        return { ...acc, [key]: queryParamValue };
+      }, {});
+
+      const { data: apiFoods } = await api.get<Omit<Food, 'formattedPrice'>[]>(
+        '/foods',
+        {
+          params: queryToAdd,
+        },
+      );
+
+      const formattedFoods = apiFoods.map(order => {
+        const { price } = order;
+
+        const formattedPrice = formatValue(price);
+
+        const newOrderInfo = { ...order, formattedPrice };
+
+        return newOrderInfo;
+      });
+
+      setFoods(formattedFoods);
     }
 
     loadFoods();
@@ -67,15 +98,31 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     async function loadCategories(): Promise<void> {
-      // Load categories from API
+      try {
+        const { data: apiCategories } = await api.get<Category[]>(
+          '/categories',
+        );
+
+        setCategories(apiCategories);
+      } catch (err) {
+        console.log(err);
+      }
     }
 
     loadCategories();
   }, []);
 
-  function handleSelectCategory(id: number): void {
-    // Select / deselect category
-  }
+  const handleSelectCategory = useCallback(
+    (id: number): void => {
+      if (selectedCategory !== id) {
+        setSelectedCategory(id);
+        return;
+      }
+
+      setSelectedCategory(undefined);
+    },
+    [selectedCategory],
+  );
 
   return (
     <Container>
@@ -85,7 +132,7 @@ const Dashboard: React.FC = () => {
           name="log-out"
           size={24}
           color="#FFB84D"
-          onPress={() => navigation.navigate('Home')}
+          onPress={() => navigate('Home')}
         />
       </Header>
       <FilterContainer>
@@ -95,6 +142,7 @@ const Dashboard: React.FC = () => {
           placeholder="Qual comida você procura?"
         />
       </FilterContainer>
+
       <ScrollView>
         <CategoryContainer>
           <Title>Categorias</Title>
@@ -122,6 +170,7 @@ const Dashboard: React.FC = () => {
             ))}
           </CategorySlider>
         </CategoryContainer>
+
         <FoodsContainer>
           <Title>Pratos</Title>
           <FoodList>
